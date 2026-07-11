@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pdf2any"
-version = "0.1.0"
+version = "0.2.0"
 description = "Pandoc-style CLI for semantic PDF conversion — turn PDF into Markdown, HTML, ProseMirror JSON, DOCX, and more."
 readme = "README.md"
 license = { text = "MIT" }

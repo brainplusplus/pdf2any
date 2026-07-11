@@ -23,7 +23,8 @@
 11. [Multi-OS / Multi-Arch Strategy](#11-multi-os--multi-arch-strategy)
 12. [Node.js and Go Integration](#12-nodejs-and-go-integration)
 13. [ProseMirror Output](#prosemirror-output)
-14. [Roadmap](#roadmap)
+14. [OCR](#ocr)
+15. [Roadmap](#roadmap)
 
 ---
 
@@ -103,8 +104,20 @@ pip install pdf2any[tables]
 # With DOCX output (pdf2docx)
 pip install pdf2any[docx]
 
+# With OCR — Tesseract (requires system Tesseract binary)
+pip install pdf2any[ocr-tesseract]
+
+# With OCR — EasyOCR (Python-native, GPU optional)
+pip install pdf2any[ocr-easyocr]
+
+# With OCR — LLM vision (OpenAI, Anthropic, Gemini)
+pip install pdf2any[ocr-llm]
+
+# With all OCR engines
+pip install pdf2any[ocr-all]
+
 # With everything
-pip install pdf2any[tables,docx]
+pip install pdf2any[tables,docx,ocr-all]
 
 # Development
 pip install pdf2any[dev]
@@ -174,7 +187,14 @@ pdf2any input.pdf -t markdown -o out.md --debug
 | `--pages` | Page range, e.g. `1-3,5,7-9`. |
 | `--start` | Start page (1-indexed). |
 | `--end` | End page (1-indexed). |
-| `--ocr` | Enable OCR (experimental — not yet implemented in v0.1). |
+| `--ocr` | Enable OCR (hybrid mode — OCR only for scanned pages). See [OCR](#ocr). |
+| `--ocr-force` | Force OCR on all pages (implies `--ocr`). |
+| `--ocr-engine` | OCR engine: `auto`, `tesseract`, `easyocr`, `llm` (default: `auto`). |
+| `--ocr-provider` | LLM provider: `openai`, `anthropic`, `gemini` (default: `openai`). |
+| `--ocr-model` | Model name for LLM OCR (e.g. `gpt-4o`, `claude-sonnet-4-20250514`). |
+| `--ocr-lang` | OCR language code (default: `eng`). |
+| `--ocr-base-url` | Custom API URL for OpenAI-compatible endpoints. |
+| `--ocr-dpi` | Render DPI for OCR (default: 300). |
 | `--extract-images` | Extract embedded images. |
 | `--standalone` | Full HTML document (with `<html>` wrapper). |
 | `--pretty` | Pretty-print output. |
@@ -353,7 +373,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 
 5. **Nested visual structures** — Text boxes, annotations, form fields, and embedded diagrams are not fully captured as semantic structures.
 
-6. **Images** — Extracted as references (e.g., Markdown `![](path)`, HTML `<img>`). No OCR is performed on image content in v1.
+6. **Images** — Extracted as references (e.g., Markdown `![](path)`, HTML `<img>`). Use `--ocr` to extract text from scanned pages or images via Tesseract, EasyOCR, or LLM vision. See [OCR](#ocr).
 
 7. **ProseMirror tables** — Full `prosemirror-tables` schema supported (`table > table_row > table_header | table_cell > paragraph > text`). Requires the `prosemirror-tables` plugin in your editor to render.
 
@@ -717,11 +737,11 @@ pdf2any scan.pdf -t markdown --ocr-force \
 
 | Phase | Features |
 |-------|----------|
-| **v0.1** (current) | markdown, html, prosemirror, json, txt, docx, png/jpg; CLI; IR; tests; packaging; **OCR (Tesseract + EasyOCR + LLM vision)** |
-| **v0.2** | Improved table detection; `epub` output format |
-| **v0.3** | `latex` output format; custom AST plugin API |
-| **v0.4** | User-defined renderer plugins; remote OCR provider interface |
-| **v0.5** | Optional server mode |
+| **v0.1** | markdown, html, prosemirror, json, txt, docx, png/jpg; CLI; IR; tests; packaging; installer scripts |
+| **v0.2** (current) | **OCR (Tesseract + EasyOCR + LLM vision: OpenAI/Anthropic/Gemini)**; hybrid + force modes; custom base URL for OpenAI-compatible endpoints |
+| **v0.3** | Improved table detection; `epub` output format |
+| **v0.4** | `latex` output format; custom AST plugin API |
+| **v0.5** | User-defined renderer plugins; optional server mode |
 
 ---
 
