@@ -31,8 +31,14 @@ class PDFParser:
                        (requires the ``[tables]`` extra to be installed).
     """
 
-    def __init__(self, *, enable_tables: bool = True) -> None:
+    def __init__(
+        self,
+        *,
+        enable_tables: bool = True,
+        ocr_integration: Any = None,
+    ) -> None:
         self.enable_tables = enable_tables
+        self.ocr_integration = ocr_integration
 
     def parse(
         self,
@@ -83,6 +89,13 @@ class PDFParser:
         for page_num in page_numbers:
             try:
                 raw_page = self._extract_page(pdf, page_num)
+
+                # OCR integration (hybrid or force)
+                if self.ocr_integration:
+                    raw_page = self.ocr_integration.process_page(
+                        pdf, page_num, raw_page
+                    )
+
                 raw_pages.append(raw_page)
             except Exception as e:
                 logger.warning("Failed to extract page %d: %s", page_num, e)

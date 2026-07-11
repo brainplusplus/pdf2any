@@ -44,6 +44,32 @@ tables = [
 docx = [
     "pdf2docx>=0.5,<1",
 ]
+# OCR — Tesseract (requires system Tesseract binary)
+ocr-tesseract = [
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0",
+]
+# OCR — EasyOCR (Python-native, GPU optional)
+ocr-easyocr = [
+    "easyocr>=1.7",
+    "Pillow>=10.0",
+]
+# OCR — LLM vision (OpenAI, Anthropic, Gemini)
+ocr-llm = [
+    "openai>=1.0",
+    "anthropic>=0.20",
+    "google-generativeai>=0.5",
+    "Pillow>=10.0",
+]
+# OCR — all engines
+ocr-all = [
+    "pytesseract>=0.3.10",
+    "easyocr>=1.7",
+    "openai>=1.0",
+    "anthropic>=0.20",
+    "google-generativeai>=0.5",
+    "Pillow>=10.0",
+]
 # Dev tooling
 dev = [
     "pytest>=8.0",
@@ -56,9 +82,9 @@ dev = [
 pdf2any = "pdf2any.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/pdf2any/pdf2any"
-Repository = "https://github.com/pdf2any/pdf2any"
-Issues = "https://github.com/pdf2any/pdf2any/issues"
+Homepage = "https://github.com/brainplusplus/pdf2any"
+Repository = "https://github.com/brainplusplus/pdf2any"
+Issues = "https://github.com/brainplusplus/pdf2any/issues"
 
 [tool.setuptools.packages.find]
 include = ["pdf2any*"]

@@ -343,7 +343,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 
 > **PDF is presentation-oriented. Semantic recovery is heuristic, not perfect.**
 
-1. **Scanned PDFs** — No text layer; OCR is deferred to v0.2. v1 extracts empty text from scanned pages.
+1. **Scanned PDFs** — Use `--ocr` (hybrid mode: OCR only for scanned pages) or `--ocr-force` (OCR all pages). Supports Tesseract, EasyOCR, and LLM vision (GPT-4o, Claude, Gemini). See [OCR](#ocr) below.
 
 2. **Multi-column layouts** — Text may interleave between columns. The layout extractor uses vertical proximity grouping, which works for single-column documents but may misorder multi-column text.
 
@@ -624,15 +624,104 @@ See: [`examples/prosemirror_sample.json`](examples/prosemirror_sample.json) for 
 
 ---
 
+## OCR
+
+pdf2any supports OCR for scanned PDFs via three pluggable engines:
+
+| Engine | Install | System Dep | GPU | Accuracy | Speed |
+|--------|---------|-----------|-----|----------|-------|
+| **Tesseract** | `pip install pdf2any[ocr-tesseract]` | Yes (Tesseract binary) | ❌ | Good | Fast |
+| **EasyOCR** | `pip install pdf2any[ocr-easyocr]` | No | ✅ CUDA | Better | Medium |
+| **LLM Vision** | `pip install pdf2any[ocr-llm]` | No (API key) | N/A | Best | Slow (API) |
+
+### Two OCR Modes
+
+```bash
+# Hybrid (default) — OCR only for pages with little/no text, use text layer otherwise
+pdf2any scanned.pdf -t markdown --ocr
+
+# Force — OCR every page, ignore text layer entirely
+pdf2any scanned.pdf -t markdown --ocr-force
+```
+
+Hybrid mode is smart: it checks each page's text layer and only OCRs pages that are empty or near-empty (< 10 chars). This handles mixed PDFs (some pages text-based, some scanned) transparently.
+
+### Tesseract
+
+```bash
+# Install
+pip install pdf2any[ocr-tesseract]
+# Also install Tesseract system binary:
+#   Ubuntu/Debian: sudo apt install tesseract-ocr
+#   macOS:         brew install tesseract
+#   Windows:       https://github.com/UB-Mannheim/tesseract/wiki
+
+# Usage
+pdf2any scan.pdf -t markdown --ocr --ocr-engine tesseract --ocr-lang eng
+```
+
+### EasyOCR
+
+```bash
+# Install
+pip install pdf2any[ocr-easyocr]
+
+# Usage (auto-detects CUDA)
+pdf2any scan.pdf -t markdown --ocr --ocr-engine easyocr --ocr-lang eng
+```
+
+### LLM Vision OCR
+
+Supports OpenAI, Anthropic, and Google Gemini — plus any OpenAI-compatible endpoint (OpenRouter, Groq, Ollama, vLLM).
+
+```bash
+# Install
+pip install pdf2any[ocr-llm]
+
+# OpenAI (GPT-4o)
+export OPENAI_API_KEY="sk-..."
+pdf2any scan.pdf -t markdown --ocr --ocr-engine llm --ocr-provider openai --ocr-model gpt-4o
+
+# Anthropic (Claude)
+export ANTHROPIC_API_KEY="sk-ant-..."
+pdf2any scan.pdf -t markdown --ocr --ocr-engine llm --ocr-provider anthropic --ocr-model claude-sonnet-4-20250514
+
+# Google Gemini
+export GOOGLE_API_KEY="AI..."
+pdf2any scan.pdf -t markdown --ocr --ocr-engine llm --ocr-provider gemini --ocr-model gemini-2.5-flash
+
+# Custom endpoint (OpenAI-compatible: OpenRouter, Groq, Ollama)
+pdf2any scan.pdf -t markdown --ocr-force \
+  --ocr-engine llm --ocr-provider openai \
+  --ocr-model qwen2-vl-72b \
+  --ocr-base-url https://openrouter.ai/api/v1
+```
+
+### All CLI Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--ocr` | off | Enable OCR (hybrid mode) |
+| `--ocr-force` | off | Force OCR on all pages (implies `--ocr`) |
+| `--ocr-engine` | `auto` | `auto`, `tesseract`, `easyocr`, `llm` |
+| `--ocr-provider` | `openai` | LLM provider: `openai`, `anthropic`, `gemini` |
+| `--ocr-model` | per-provider | Model name (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
+| `--ocr-lang` | `eng` | Language code (`eng`, `fra`, `deu`, `ind`, `ch_sim`, ...) |
+| `--ocr-base-url` | SDK default | Custom API URL (OpenAI-compatible) |
+| `--ocr-concurrency` | `1` | Parallel API calls (LLM only) |
+| `--ocr-dpi` | `300` | Render DPI for OCR (higher = more accurate) |
+
+---
+
 ## Roadmap
 
 | Phase | Features |
 |-------|----------|
-| **v0.1** (current) | markdown, html, prosemirror, json, txt, docx, png/jpg; CLI; IR; tests; packaging |
-| **v0.2** | OCR via Tesseract plugin; improved table detection |
-| **v0.3** | `epub` output format; `latex` output format |
-| **v0.4** | Custom AST plugin API; user-defined renderer plugins |
-| **v0.5** | Remote OCR provider interface; optional server mode |
+| **v0.1** (current) | markdown, html, prosemirror, json, txt, docx, png/jpg; CLI; IR; tests; packaging; **OCR (Tesseract + EasyOCR + LLM vision)** |
+| **v0.2** | Improved table detection; `epub` output format |
+| **v0.3** | `latex` output format; custom AST plugin API |
+| **v0.4** | User-defined renderer plugins; remote OCR provider interface |
+| **v0.5** | Optional server mode |
 
 ---
 

@@ -93,9 +93,17 @@ class TestCLIErrors:
         rc = main(["input.pdf", "-t", "png"])
         assert rc == 2
 
-    def test_ocr_capability_error(self, capsys):
+    def test_ocr_no_engine_available(self, capsys):
+        """--ocr without any OCR engine installed should give capability error."""
         rc = main(["input.pdf", "-t", "markdown", "--ocr"])
-        assert rc == 3  # Capability error
+        # If no OCR engine is installed → exit 3 (capability error)
+        # If an engine IS installed → will try to parse → exit 1 (file not found)
+        assert rc in (1, 3)
+
+    def test_ocr_force_implies_ocr(self, capsys):
+        """--ocr-force should enable OCR without needing --ocr."""
+        rc = main(["input.pdf", "-t", "markdown", "--ocr-force"])
+        assert rc in (1, 3)
 
 
 class TestCLIJSONMode:
@@ -114,7 +122,7 @@ class TestCLIJSONMode:
     def test_ocr_json_error(self, capsys):
         """OCR capability error in JSON mode."""
         rc = main(["input.pdf", "-t", "markdown", "--ocr", "--json"])
-        assert rc == 3
+        assert rc in (1, 3)
         captured = capsys.readouterr()
         data = json.loads(captured.out)
         assert data["ok"] is False

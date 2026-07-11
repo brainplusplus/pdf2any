@@ -108,7 +108,58 @@ def build_parser() -> argparse.ArgumentParser:
         "--ocr",
         action="store_true",
         default=False,
-        help="Enable OCR (experimental — not yet implemented in v0.1).",
+        help="Enable OCR (hybrid mode — OCR only for scanned pages).",
+    )
+    parser.add_argument(
+        "--ocr-force",
+        dest="ocr_force",
+        action="store_true",
+        default=False,
+        help="Force OCR on all pages, ignoring text layer (implies --ocr).",
+    )
+    parser.add_argument(
+        "--ocr-engine",
+        dest="ocr_engine",
+        default="auto",
+        help="OCR engine: auto, tesseract, easyocr, llm (default: auto).",
+    )
+    parser.add_argument(
+        "--ocr-provider",
+        dest="ocr_provider",
+        default="openai",
+        help="LLM provider for --ocr-engine llm: openai, anthropic, gemini (default: openai).",
+    )
+    parser.add_argument(
+        "--ocr-model",
+        dest="ocr_model",
+        default=None,
+        help="Model name for LLM OCR (e.g. gpt-4o, claude-sonnet-4-20250514, gemini-2.5-flash).",
+    )
+    parser.add_argument(
+        "--ocr-lang",
+        dest="ocr_lang",
+        default="eng",
+        help="OCR language code (default: eng). Examples: eng, fra, deu, ind, ch_sim.",
+    )
+    parser.add_argument(
+        "--ocr-base-url",
+        dest="ocr_base_url",
+        default=None,
+        help="Custom API base URL for LLM OCR (OpenAI-compatible: OpenRouter, Groq, Ollama).",
+    )
+    parser.add_argument(
+        "--ocr-concurrency",
+        dest="ocr_concurrency",
+        type=int,
+        default=1,
+        help="Parallel OCR calls for LLM engine (default: 1).",
+    )
+    parser.add_argument(
+        "--ocr-dpi",
+        dest="ocr_dpi",
+        type=int,
+        default=300,
+        help="Render DPI for OCR (default: 300). Higher = more accurate, slower.",
     )
     parser.add_argument(
         "--extract-images",
@@ -229,27 +280,50 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
-    # OCR check (stub)
-    if args.ocr:
+    # OCR setup
+    ocr_integration = None
+    if args.ocr or args.ocr_force:
+        from pdf2any.backends.ocr_integration import OCRIntegration
         from pdf2any.backends.ocr_provider import get_ocr_provider
 
-        provider = get_ocr_provider()
-        if not provider.is_available:
-            error = CapabilityError(
-                "OCR is not yet implemented in pdf2any v0.1. "
-                "Tesseract OCR support is planned for v0.2."
+        ocr_mode = "force" if args.ocr_force else "hybrid"
+
+        provider_kwargs = {}
+        if args.ocr_engine == "llm":
+            provider_kwargs["provider"] = args.ocr_provider
+            if args.ocr_model:
+                provider_kwargs["model"] = args.ocr_model
+            if args.ocr_base_url:
+                provider_kwargs["base_url"] = args.ocr_base_url
+            provider_kwargs["concurrency"] = args.ocr_concurrency
+
+        try:
+            provider = get_ocr_provider(args.ocr_engine, **provider_kwargs)
+            ocr_integration = OCRIntegration(
+                provider=provider,
+                mode=ocr_mode,
+                lang=args.ocr_lang,
+                dpi=args.ocr_dpi,
             )
+            logger.info(
+                "OCR enabled: engine=%s, mode=%s, lang=%s, dpi=%d",
+                provider.name,
+                ocr_mode,
+                args.ocr_lang,
+                args.ocr_dpi,
+            )
+        except CapabilityError as e:
             if args.json_mode:
-                _emit_json_error(args, error)
+                _emit_json_error(args, e)
             else:
-                print(f"Error: {error.message}", file=sys.stderr)
-            return error.exit_code
+                print(f"Error: {e.message}", file=sys.stderr)
+            return e.exit_code
 
     # Start conversion
     start_time = time.monotonic()
 
     try:
-        result = _run_conversion(args, registry)
+        result = _run_conversion(args, registry, ocr_integration)
         duration_ms = int((time.monotonic() - start_time) * 1000)
 
         if args.json_mode:
@@ -279,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
         return error.exit_code
 
 
-def _run_conversion(args: argparse.Namespace, registry: Any) -> dict[str, Any]:
+def _run_conversion(args: argparse.Namespace, registry: Any, ocr_integration: Any = None) -> dict[str, Any]:
     """Run the actual conversion and return result dict.
 
     Returns:
@@ -303,7 +377,10 @@ def _run_conversion(args: argparse.Namespace, registry: Any) -> dict[str, Any]:
 
     # Text-based formats: go through IR pipeline
     # Parse PDF
-    parser = PDFParser(enable_tables=True)
+    parser = PDFParser(
+        enable_tables=True,
+        ocr_integration=ocr_integration,
+    )
     raw_pages, metadata = parser.parse(data, page_range)
     logger.debug("Parsed %d pages", len(raw_pages))
 
