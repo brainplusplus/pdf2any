@@ -44,12 +44,13 @@ jobs:
           script-name: pdf2any/__main__.py
           mode: onefile
           output-dir: build
-          output-filename: ${{ matrix.target == 'windows-amd64' && 'pdf2any-windows-amd64.exe' || format('pdf2any-{0}', matrix.target) }}
+          output-file: ${{ matrix.target == 'windows-amd64' && 'pdf2any-windows-amd64.exe' || format('pdf2any-{0}', matrix.target) }}
           include-package: pdf2any
           enable-plugins: anti-bloat
           follow-import-to: pdf2any
-          nofollow-import-to: pymupdf,fitz,cv2,docx
+          nofollow-import-to: pymupdf
           onefile-tempdir-spec: '{CACHE_DIR}/pdf2any'
+          assume-yes-for-downloads: true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
