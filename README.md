@@ -2,7 +2,8 @@
 
 > **Pandoc for PDF semantics** — A CLI-first, developer-friendly, automation-ready converter that turns PDF into structured, useful output formats.
 
-[![CI](https://github.com/pdf2any/pdf2any/actions/workflows/ci.yml/badge.svg)](https://github.com/pdf2any/pdf2any/actions/workflows/ci.yml)
+[![CI](https://github.com/brainplusplus/pdf2any/actions/workflows/ci.yml/badge.svg)](https://github.com/brainplusplus/pdf2any/actions/workflows/ci.yml)
+[![Release](https://github.com/brainplusplus/pdf2any/actions/workflows/release.yml/badge.svg)](https://github.com/brainplusplus/pdf2any/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
@@ -22,6 +23,8 @@
 10. [Build and Release Instructions](#10-build-and-release-instructions)
 11. [Multi-OS / Multi-Arch Strategy](#11-multi-os--multi-arch-strategy)
 12. [Node.js and Go Integration](#12-nodejs-and-go-integration)
+13. [ProseMirror Output](#prosemirror-output)
+14. [Roadmap](#roadmap)
 
 ---
 
@@ -58,7 +61,38 @@
 
 ## 4. Installation
 
-### Option A: pip install (Python package)
+### Option A: One-line installer (recommended — no Python needed)
+
+**Linux / macOS:**
+```bash
+curl -sL https://github.com/brainplusplus/pdf2any/releases/latest/download/install.sh | sh
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://github.com/brainplusplus/pdf2any/releases/latest/download/install.ps1 | iex
+```
+
+The installer auto-detects your OS and architecture, downloads the latest binary from GitHub Releases, installs it to your PATH, and verifies the installation.
+
+### Option B: Download a standalone binary
+
+Pre-built binaries are available on the [GitHub Releases](https://github.com/brainplusplus/pdf2any/releases) page for:
+
+| Platform | Artifact |
+|----------|----------|
+| Linux x86_64 | `pdf2any-linux-amd64` |
+| Linux ARM64 | `pdf2any-linux-arm64` |
+| Windows x86_64 | `pdf2any-windows-amd64.exe` |
+| macOS Intel | `pdf2any-macos-amd64` |
+| macOS Apple Silicon | `pdf2any-macos-arm64` |
+
+Download, extract, and run — no Python installation required.
+
+**Unix:** `chmod +x pdf2any-* && ./pdf2any-linux-amd64 --version`
+**Windows:** `pdf2any-windows-amd64.exe --version`
+
+### Option C: pip install (Python package)
 
 ```bash
 # Core (text extraction + rendering only)
@@ -77,25 +111,11 @@ pip install pdf2any[tables,docx]
 pip install pdf2any[dev]
 ```
 
-### Option B: Download a standalone binary
-
-Pre-built binaries are available on the [GitHub Releases](https://github.com/pdf2any/pdf2any/releases) page for:
-
-| Platform | Artifact |
-|----------|----------|
-| Linux x86_64 | `pdf2any-linux-amd64` |
-| Linux ARM64 | `pdf2any-linux-arm64` |
-| Windows x86_64 | `pdf2any-windows-amd64.exe` |
-| macOS Intel | `pdf2any-macos-amd64` |
-| macOS Apple Silicon | `pdf2any-macos-arm64` |
-
-Download, extract, and run — no Python installation required.
-
-### Option C: Docker
+### Option D: Docker
 
 ```bash
 # Pull and run
-docker run --rm -v $(pwd):/work ghcr.io/pdf2any/pdf2any input.pdf -t markdown -o /work/out.md
+docker run --rm -v $(pwd):/work ghcr.io/brainplusplus/pdf2any input.pdf -t markdown -o /work/out.md
 ```
 
 ---
@@ -336,7 +356,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 
 6. **Images** — Extracted as references (e.g., Markdown `![](path)`, HTML `<img>`). No OCR is performed on image content in v1.
 
-7. **ProseMirror tables** — Degrade to paragraphs. Full table support requires the `prosemirror-tables` plugin and a more complex schema.
+7. **ProseMirror tables** — Full `prosemirror-tables` schema supported (`table > table_row > table_header | table_cell > paragraph > text`). Requires the `prosemirror-tables` plugin in your editor to render.
 
 ---
 
@@ -346,7 +366,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 
 ```bash
 # Clone the repository
-git clone https://github.com/pdf2any/pdf2any.git
+git clone https://github.com/brainplusplus/pdf2any.git
 cd pdf2any
 
 # Install with dev dependencies
@@ -561,7 +581,34 @@ The ProseMirror renderer outputs valid ProseMirror-style JSON with a root `doc` 
           { "type": "text", "text": "First item" }
         ]}
       ]}
-    ]}
+    ]},
+    { "type": "table", "content": [
+      { "type": "table_row", "content": [
+        { "type": "table_header", "content": [
+          { "type": "paragraph", "content": [
+            { "type": "text", "text": "Name" }
+          ]}
+        ]},
+        { "type": "table_header", "content": [
+          { "type": "paragraph", "content": [
+            { "type": "text", "text": "Value" }
+          ]}
+        ]}
+      ]},
+      { "type": "table_row", "content": [
+        { "type": "table_cell", "content": [
+          { "type": "paragraph", "content": [
+            { "type": "text", "text": "Alpha" }
+          ]}
+        ]},
+        { "type": "table_cell", "content": [
+          { "type": "paragraph", "content": [
+            { "type": "text", "text": "100" }
+          ]}
+        ]}
+      ]}
+    ]},
+    { "type": "horizontal_rule" }
   ]
 }
 ```
