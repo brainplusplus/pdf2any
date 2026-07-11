@@ -2,7 +2,6 @@
 
 > **Pandoc for PDF semantics** — A CLI-first, developer-friendly, automation-ready converter that turns PDF into structured, useful output formats.
 
-[![CI](https://github.com/brainplusplus/pdf2any/actions/workflows/ci.yml/badge.svg)](https://github.com/brainplusplus/pdf2any/actions/workflows/ci.yml)
 [![Release](https://github.com/brainplusplus/pdf2any/actions/workflows/release.yml/badge.svg)](https://github.com/brainplusplus/pdf2any/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
