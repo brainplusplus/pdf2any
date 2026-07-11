@@ -1,0 +1,18 @@
+# docker-compose.yml — Local development and testing for pdf2any
+#
+# Usage:
+#   docker compose run pdf2any input.pdf -t markdown -o /work/out.md
+#   docker compose run pdf2any --list-output-formats
+
+services:
+  pdf2any:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: pdf2any:latest
+    container_name: pdf2any
+    volumes:
+      # Mount current directory for input/output file access
+      - ./:/work
+    entrypoint: ["pdf2any"]
+    command: ["--help"]

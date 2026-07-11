@@ -1,0 +1,16 @@
+{
+  "ok": false,
+  "input": "report.pdf",
+  "output_format": "prosemirror",
+  "output_path": null,
+  "pages_processed": 0,
+  "duration_ms": 15,
+  "ir_version": "1.0",
+  "pdf2any_version": "0.1.0",
+  "warnings": [],
+  "error": {
+    "code": "PARSE_ERROR",
+    "message": "Failed to open PDF: file is encrypted",
+    "type": "PDFParseError"
+  }
+}

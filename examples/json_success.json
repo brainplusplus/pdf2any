@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "input": "report.pdf",
+  "output_format": "markdown",
+  "output_path": "out.md",
+  "pages_processed": 12,
+  "duration_ms": 3420,
+  "ir_version": "1.0",
+  "pdf2any_version": "0.1.0",
+  "warnings": [],
+  "error": null
+}

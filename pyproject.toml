@@ -1,0 +1,91 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf2any"
+version = "0.1.0"
+description = "Pandoc-style CLI for semantic PDF conversion — turn PDF into Markdown, HTML, ProseMirror JSON, DOCX, and more."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [
+    { name = "pdf2any contributors" },
+]
+keywords = ["pdf", "conversion", "markdown", "html", "prosemirror", "docx", "cli", "pandoc"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Topic :: Text Processing :: Markup :: HTML",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+
+# Core dependencies — always installed, permissive licenses only
+dependencies = [
+    "pypdfium2>=4.0,<5",
+    "pypdf>=4.0,<6",
+]
+
+[project.optional-dependencies]
+# Table + layout extraction (MIT)
+tables = [
+    "pdfplumber>=0.11,<1",
+]
+# DOCX backend (MIT)
+docx = [
+    "pdf2docx>=0.5,<1",
+]
+# Dev tooling
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "mypy>=1.10",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+pdf2any = "pdf2any.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/pdf2any/pdf2any"
+Repository = "https://github.com/pdf2any/pdf2any"
+Issues = "https://github.com/pdf2any/pdf2any/issues"
+
+[tool.setuptools.packages.find]
+include = ["pdf2any*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.lint.isort]
+known-first-party = ["pdf2any"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["pdf2any"]
+omit = ["*/tests/*", "*/__main__.py"]

@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-amd64
+            arch: x64
+          - os: ubuntu-latest
+            target: linux-arm64
+            arch: arm64
+            cross: true
+          - os: windows-latest
+            target: windows-amd64
+            arch: x64
+          - os: macos-latest
+            target: macos-amd64
+            arch: x64
+          - os: macos-latest
+            target: macos-arm64
+            arch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Nuitka and dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install nuitka
+          pip install -e ".[tables,docx]"
+
+      - name: Set up QEMU (for ARM64 cross-compilation on Linux)
+        if: matrix.cross == true
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build onefile executable
+        run: python scripts/build_onefile.py --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdf2any-${{ matrix.target }}
+          path: build/onefile/pdf2any*
+
+      - name: Make executable (Unix)
+        if: runner.os != 'Windows'
+        run: chmod +x build/onefile/pdf2any*
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect and rename artifacts
+        run: |
+          mkdir -p release
+          find artifacts -type f -name "pdf2any*" -exec cp {} release/ \;
+          ls -la release/
+
+      - name: Generate checksums
+        run: python scripts/generate_checksums.py release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/pdf2any-*
+            release/checksums.txt
+          draft: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
