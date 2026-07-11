@@ -15,20 +15,14 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux-amd64
-            arch: x64
           - os: ubuntu-latest
             target: linux-arm64
-            arch: arm64
-            cross: true
           - os: windows-latest
             target: windows-amd64
-            arch: x64
           - os: macos-latest
             target: macos-amd64
-            arch: x64
           - os: macos-latest
             target: macos-arm64
-            arch: arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -38,28 +32,36 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install Nuitka and dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install nuitka
           pip install -e ".[tables,docx]"
 
-      - name: Set up QEMU (for ARM64 cross-compilation on Linux)
-        if: matrix.cross == true
-        uses: docker/setup-qemu-action@v3
-
       - name: Build onefile executable
-        run: python scripts/build_onefile.py --target ${{ matrix.target }}
+        uses: Nuitka/Nuitka-Action@main
+        with:
+          nuitka-version: main
+          script-name: pdf2any/__main__.py
+          mode: onefile
+          output-dir: build
+          output-filename: ${{ matrix.target == 'windows-amd64' && 'pdf2any-windows-amd64.exe' || format('pdf2any-{0}', matrix.target) }}
+          include-package: pdf2any
+          enable-plugins: anti-bloat
+          follow-import-to: pdf2any
+          onefile-tempdir-spec: '{CACHE_DIR}/pdf2any'
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: pdf2any-${{ matrix.target }}
-          path: build/onefile/pdf2any*
+          path: |
+            build/pdf2any*
+            build/*.exe
+          include-hidden-files: true
 
       - name: Make executable (Unix)
         if: runner.os != 'Windows'
-        run: chmod +x build/onefile/pdf2any*
+        run: chmod +x build/pdf2any*
 
   release:
     name: Create Release
@@ -83,7 +85,7 @@ jobs:
       - name: Collect and rename artifacts
         run: |
           mkdir -p release
-          find artifacts -type f -name "pdf2any*" -exec cp {} release/ \;
+          find artifacts -type f \( -name "pdf2any*" -o -name "*.exe" \) -exec cp {} release/ \;
           ls -la release/
 
       - name: Generate checksums
