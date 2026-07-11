@@ -20,7 +20,18 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from packaging.artifact_naming import get_artifact_name, list_targets
+# Import from local packaging/ directory, not the PyPI 'packaging' package.
+import importlib.util
+
+_spec = importlib.util.spec_from_file_location(
+    "artifact_naming",
+    PROJECT_ROOT / "packaging" / "artifact_naming.py",
+)
+assert _spec is not None and _spec.loader is not None
+_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_mod)
+get_artifact_name = _mod.get_artifact_name
+list_targets = _mod.list_targets
 
 
 def build_standalone(target: str | None = None) -> int:
@@ -70,7 +81,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build pdf2any standalone executable")
     parser.add_argument(
         "--target",
-        choices=list_targets() + [None],
+        choices=list_targets(),
         default=None,
         help="Target platform (default: current platform)",
     )
