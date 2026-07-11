@@ -93,6 +93,12 @@ jobs:
           find artifacts -type f \( -name "pdf2any*" -o -name "*.exe" \) -exec cp {} release/ \;
           ls -la release/
 
+      - name: Copy installer scripts
+        run: |
+          cp scripts/install.sh release/install.sh
+          cp scripts/install.ps1 release/install.ps1
+          chmod +x release/install.sh
+
       - name: Generate checksums
         run: python scripts/generate_checksums.py release/
 
@@ -101,6 +107,8 @@ jobs:
         with:
           files: |
             release/pdf2any-*
+            release/install.sh
+            release/install.ps1
             release/checksums.txt
           draft: true
           generate_release_notes: true

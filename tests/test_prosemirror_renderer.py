@@ -133,31 +133,63 @@ class TestProseMirrorRenderer:
         node = data["content"][0]
         assert node["type"] == "code_block"
 
-    def test_table_degrades_to_paragraphs(self):
-        """Tables should degrade to paragraphs, not fail."""
+    def test_table_full_schema(self):
+        """Tables should use prosemirror-tables schema: table > table_row > table_header/table_cell."""
         doc = IRDocument(children=[
             Table(rows=[
                 TableRow(cells=[
-                    TableCell(content=[Text(text="A")]),
-                    TableCell(content=[Text(text="B")]),
+                    TableCell(content=[Text(text="Name")]),
+                    TableCell(content=[Text(text="Value")]),
+                ], header=True),
+                TableRow(cells=[
+                    TableCell(content=[Text(text="x")]),
+                    TableCell(content=[Text(text="42")]),
                 ]),
             ]),
         ])
         data = json.loads(self.renderer.render(doc))
-        # First content node should be a paragraph (degraded table)
-        node = data["content"][0]
-        assert node["type"] == "paragraph"
+        table_node = data["content"][0]
+        assert table_node["type"] == "table"
+        assert len(table_node["content"]) == 2  # 2 rows
 
-    def test_page_break_degrades(self):
-        """PageBreak should not cause errors (degrades to None/skipped)."""
+        # Header row uses table_header cells
+        header_row = table_node["content"][0]
+        assert header_row["type"] == "table_row"
+        assert header_row["content"][0]["type"] == "table_header"
+        assert header_row["content"][0]["content"][0]["type"] == "paragraph"
+        assert header_row["content"][0]["content"][0]["content"][0]["text"] == "Name"
+
+        # Body row uses table_cell cells
+        body_row = table_node["content"][1]
+        assert body_row["content"][0]["type"] == "table_cell"
+        assert body_row["content"][0]["content"][0]["content"][0]["text"] == "x"
+
+    def test_table_cell_colspan_rowspan(self):
+        """Table cells with colspan/rowspan should include attrs."""
+        doc = IRDocument(children=[
+            Table(rows=[
+                TableRow(cells=[
+                    TableCell(content=[Text(text="merged")], colspan=2),
+                ], header=True),
+            ]),
+        ])
+        data = json.loads(self.renderer.render(doc))
+        cell = data["content"][0]["content"][0]["content"][0]
+        assert cell["attrs"]["colspan"] == 2
+
+    def test_page_break_as_horizontal_rule(self):
+        """PageBreak should render as horizontal_rule node, not skipped."""
         doc = IRDocument(children=[
             Paragraph(content=[Text(text="Before")]),
             PageBreak(),
             Paragraph(content=[Text(text="After")]),
         ])
         data = json.loads(self.renderer.render(doc))
-        # Should have 2 content nodes (page break skipped)
-        assert len(data["content"]) == 2
+        # Should have 3 content nodes: paragraph, horizontal_rule, paragraph
+        assert len(data["content"]) == 3
+        assert data["content"][0]["type"] == "paragraph"
+        assert data["content"][1]["type"] == "horizontal_rule"
+        assert data["content"][2]["type"] == "paragraph"
 
     def test_empty_paragraph_gets_empty_text(self):
         """ProseMirror requires content arrays; empty paragraph gets empty text."""

@@ -11,14 +11,17 @@ Supported node types:
     - blockquote
     - image (attrs.src, attrs.alt)
     - text (with marks: strong, em, code, link)
-
-Unsupported structures degrade gracefully to paragraphs.
+    - table > table_row > table_header / table_cell (prosemirror-tables schema)
+    - horizontal_rule (for page breaks)
 
 Schema alignment:
     - doc contains block nodes
     - paragraphs contain inline content (text nodes)
     - list nodes contain list_item nodes
     - list_item nodes contain block content (paragraphs)
+    - tables use prosemirror-tables schema:
+      table > table_row > (table_header | table_cell) > paragraph > text
+    - page breaks render as horizontal_rule nodes
 """
 
 from __future__ import annotations
@@ -144,14 +147,11 @@ class ProseMirrorRenderer(Renderer):
             }
 
         if isinstance(node, Table):
-            # Tables degrade to paragraphs in basic ProseMirror schema
-            # (full table support requires prosemirror-tables plugin)
-            return self._degrade_table_to_paragraphs(node)
+            return self._render_table(node)
 
         if isinstance(node, PageBreak):
-            # Degrade: insert a horizontal rule-like paragraph
-            # Basic schema doesn't have horizontal_rule; skip
-            return None
+            # Render as horizontal_rule (standard ProseMirror basic schema node)
+            return {"type": "horizontal_rule"}
 
         if isinstance(node, LineBreak):
             # hard_break node in ProseMirror
@@ -211,26 +211,48 @@ class ProseMirrorRenderer(Renderer):
                 result.append({"type": "link", "attrs": {"href": mark.href}})
         return result
 
-    def _degrade_table_to_paragraphs(self, table: Table) -> list[dict[str, Any]]:
-        """Degrade a table to a list of paragraphs (one per row).
+    def _render_table(self, table: Table) -> dict[str, Any]:
+        """Render a table using the prosemirror-tables schema.
 
-        Each row becomes a paragraph with cell text joined by spaces.
-        This ensures no data loss while maintaining schema validity.
+        Structure:
+            table
+              └─ table_row
+                   └─ table_header | table_cell
+                        └─ paragraph
+                             └─ text
+
+        Header rows use ``table_header`` cells; body rows use ``table_cell``.
+        Each cell wraps its inline content in a paragraph (required by
+        the prosemirror-tables schema).
         """
-        paragraphs: list[dict[str, Any]] = []
-        for row in table.rows:
-            cell_texts: list[str] = []
-            for cell in row.cells:
-                text = "".join(
-                    n.text if isinstance(n, Text) else str(n)
-                    for n in cell.content
-                )
-                if text.strip():
-                    cell_texts.append(text.strip())
-            if cell_texts:
-                row_text = " | ".join(cell_texts)
-                paragraphs.append({
-                    "type": "paragraph",
-                    "content": [{"type": "text", "text": row_text}],
-                })
-        return paragraphs if paragraphs else [{"type": "paragraph", "content": [{"type": "text", "text": ""}]}]
+        rows: list[dict[str, Any]] = []
+
+        for ir_row in table.rows:
+            cells: list[dict[str, Any]] = []
+            for ir_cell in ir_row.cells:
+                cell_type = "table_header" if ir_row.header else "table_cell"
+                cell_content = self._render_inline_list(ir_cell.content)
+                if not cell_content:
+                    cell_content = [{"type": "text", "text": ""}]
+
+                cell_node: dict[str, Any] = {
+                    "type": cell_type,
+                    "content": [
+                        {"type": "paragraph", "content": cell_content}
+                    ],
+                }
+
+                # Include colspan/rowspan if non-default
+                attrs: dict[str, Any] = {}
+                if ir_cell.colspan > 1:
+                    attrs["colspan"] = ir_cell.colspan
+                if ir_cell.rowspan > 1:
+                    attrs["rowspan"] = ir_cell.rowspan
+                if attrs:
+                    cell_node["attrs"] = attrs
+
+                cells.append(cell_node)
+
+            rows.append({"type": "table_row", "content": cells})
+
+        return {"type": "table", "content": rows}

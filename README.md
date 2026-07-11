@@ -310,7 +310,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 |--------|:--------:|:----------:|:-----:|:------:|:------:|:------------:|:-----:|:-----------:|
 | markdown | ✅ | ✅ | ✅ | ✅ | ✅ ref | ✅ | ✅ | ✅ `---` |
 | html | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `<hr>` |
-| prosemirror | ✅ | ✅ | ✅ | ⚠️ degrade | ✅ | ✅ | ✅ | ⚠️ skip |
+| prosemirror | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ `hr` |
 | json | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | txt | ✅ | ✅ | ✅ | ⚠️ plain | ❌ | ❌ | ❌ | ✅ `\f` |
 | docx | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -572,8 +572,9 @@ See: [`examples/prosemirror_sample.json`](examples/prosemirror_sample.json) for 
 - `doc` contains block nodes
 - `paragraph` contains inline content (text nodes)
 - `list_item` contains block content (paragraphs)
+- `table` uses prosemirror-tables schema: `table > table_row > table_header | table_cell > paragraph > text`
+- Page breaks render as `horizontal_rule` nodes
 - Unsupported structures degrade to paragraphs
-- Tables degrade to pipe-separated paragraphs (full table support requires `prosemirror-tables`)
 
 ---
 
