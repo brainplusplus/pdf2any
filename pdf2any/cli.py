@@ -121,7 +121,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--ocr-engine",
         dest="ocr_engine",
         default="auto",
-        help="OCR engine: auto, tesseract, easyocr, llm (default: auto).",
+        help="OCR engine: auto, tesseract, llm (default: auto).",
     )
     parser.add_argument(
         "--ocr-provider",

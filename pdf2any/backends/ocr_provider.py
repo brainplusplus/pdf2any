@@ -2,13 +2,11 @@
 
 Supported engines:
     - tesseract: Tesseract OCR via pytesseract (requires system Tesseract)
-    - easyocr: EasyOCR (Python-native, GPU optional)
     - llm: LLM-based vision OCR (OpenAI GPT-4o, Gemini, etc.)
 
 Usage:
     pdf2any scanned.pdf -t markdown --ocr
     pdf2any scanned.pdf -t markdown --ocr --ocr-engine tesseract
-    pdf2any scanned.pdf -t markdown --ocr --ocr-engine easyocr
     pdf2any scanned.pdf -t markdown --ocr --ocr-engine llm --ocr-model gpt-4o
 """
 
@@ -82,7 +80,7 @@ def get_ocr_provider(
     """Get an OCR provider by engine name.
 
     Args:
-        engine: Provider name ('auto', 'tesseract', 'easyocr', 'llm').
+        engine: Provider name ('auto', 'tesseract', 'llm').
                 'auto' picks the first available provider.
         **kwargs: Provider-specific options (e.g. model='gpt-4o').
 
@@ -95,7 +93,7 @@ def get_ocr_provider(
     """
     if engine == "auto":
         # Try in priority order
-        for name in ("tesseract", "easyocr", "llm"):
+        for name in ("tesseract", "llm"):
             if name in _REGISTRY:
                 provider = _REGISTRY[name](**kwargs)
                 if provider.is_available:
@@ -104,7 +102,6 @@ def get_ocr_provider(
         raise CapabilityError(
             "No OCR engine is available. Install one of:\n"
             "  pip install pdf2any[ocr-tesseract]  (Tesseract — also needs system Tesseract)\n"
-            "  pip install pdf2any[ocr-easyocr]    (EasyOCR — Python-native)\n"
             "  pip install pdf2any[ocr-llm]        (LLM vision — needs API key)"
         )
 
@@ -139,13 +136,6 @@ def _autoregister() -> None:
         register_provider("tesseract", TesseractProvider)
     except ImportError:
         logger.debug("Tesseract provider not available (install pytesseract)")
-
-    try:
-        from pdf2any.backends.ocr_easyocr import EasyOCRProvider
-
-        register_provider("easyocr", EasyOCRProvider)
-    except ImportError:
-        logger.debug("EasyOCR provider not available (install easyocr)")
 
     try:
         from pdf2any.backends.ocr_llm import LLMOCRProvider

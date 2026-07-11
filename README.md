@@ -107,9 +107,6 @@ pip install pdf2any[docx]
 # With OCR — Tesseract (requires system Tesseract binary)
 pip install pdf2any[ocr-tesseract]
 
-# With OCR — EasyOCR (Python-native, GPU optional)
-pip install pdf2any[ocr-easyocr]
-
 # With OCR — LLM vision (OpenAI, Anthropic, Gemini)
 pip install pdf2any[ocr-llm]
 
@@ -123,7 +120,7 @@ pip install pdf2any[all]
 pip install pdf2any[dev]
 ```
 
-> **Note:** The standalone binary (Option A/B) already bundles tables, DOCX, Tesseract wrapper, and LLM OCR. EasyOCR is excluded from the binary (adds ~2 GB via PyTorch) — install it separately with `pip install pdf2any[ocr-easyocr]` if needed.
+> **Note:** The standalone binary (Option A/B) already bundles tables, DOCX, Tesseract wrapper, and LLM OCR. Tesseract requires installing the system binary separately (see [OCR](#ocr)).
 
 ### Option D: Docker
 
@@ -191,7 +188,7 @@ pdf2any input.pdf -t markdown -o out.md --debug
 | `--end` | End page (1-indexed). |
 | `--ocr` | Enable OCR (hybrid mode — OCR only for scanned pages). See [OCR](#ocr). |
 | `--ocr-force` | Force OCR on all pages (implies `--ocr`). |
-| `--ocr-engine` | OCR engine: `auto`, `tesseract`, `easyocr`, `llm` (default: `auto`). |
+| `--ocr-engine` | OCR engine: `auto`, `tesseract`, `llm` (default: `auto`). |
 | `--ocr-provider` | LLM provider: `openai`, `anthropic`, `gemini` (default: `openai`). |
 | `--ocr-model` | Model name for LLM OCR (e.g. `gpt-4o`, `claude-sonnet-4-20250514`). |
 | `--ocr-lang` | OCR language code (default: `eng`). |
@@ -365,7 +362,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 
 > **PDF is presentation-oriented. Semantic recovery is heuristic, not perfect.**
 
-1. **Scanned PDFs** — Use `--ocr` (hybrid mode: OCR only for scanned pages) or `--ocr-force` (OCR all pages). Supports Tesseract, EasyOCR, and LLM vision (GPT-4o, Claude, Gemini). See [OCR](#ocr) below.
+1. **Scanned PDFs** — Use `--ocr` (hybrid mode: OCR only for scanned pages) or `--ocr-force` (OCR all pages). Supports Tesseract and LLM vision (GPT-4o, Claude, Gemini). See [OCR](#ocr) below.
 
 2. **Multi-column layouts** — Text may interleave between columns. The layout extractor uses vertical proximity grouping, which works for single-column documents but may misorder multi-column text.
 
@@ -375,7 +372,7 @@ All text/structured outputs render from this IR. The IR is versioned (`ir_versio
 
 5. **Nested visual structures** — Text boxes, annotations, form fields, and embedded diagrams are not fully captured as semantic structures.
 
-6. **Images** — Extracted as references (e.g., Markdown `![](path)`, HTML `<img>`). Use `--ocr` to extract text from scanned pages or images via Tesseract, EasyOCR, or LLM vision. See [OCR](#ocr).
+6. **Images** — Extracted as references (e.g., Markdown `![](path)`, HTML `<img>`). Use `--ocr` to extract text from scanned pages or images via Tesseract or LLM vision. See [OCR](#ocr).
 
 7. **ProseMirror tables** — Full `prosemirror-tables` schema supported (`table > table_row > table_header | table_cell > paragraph > text`). Requires the `prosemirror-tables` plugin in your editor to render.
 
@@ -650,11 +647,10 @@ See: [`examples/prosemirror_sample.json`](examples/prosemirror_sample.json) for 
 
 pdf2any supports OCR for scanned PDFs via three pluggable engines:
 
-| Engine | Install | System Dep | GPU | Accuracy | Speed |
-|--------|---------|-----------|-----|----------|-------|
-| **Tesseract** | `pip install pdf2any[ocr-tesseract]` | Yes (Tesseract binary) | ❌ | Good | Fast |
-| **EasyOCR** | `pip install pdf2any[ocr-easyocr]` | No | ✅ CUDA | Better | Medium |
-| **LLM Vision** | `pip install pdf2any[ocr-llm]` | No (API key) | N/A | Best | Slow (API) |
+| Engine | Install | System Dep | Accuracy | Speed |
+|--------|---------|-----------|----------|-------|
+| **Tesseract** | `pip install pdf2any[ocr-tesseract]` | Yes (Tesseract binary) | Good | Fast |
+| **LLM Vision** | `pip install pdf2any[ocr-llm]` | No (API key) | Best | Slow (API) |
 
 ### Two OCR Modes
 
@@ -680,16 +676,6 @@ pip install pdf2any[ocr-tesseract]
 
 # Usage
 pdf2any scan.pdf -t markdown --ocr --ocr-engine tesseract --ocr-lang eng
-```
-
-### EasyOCR
-
-```bash
-# Install
-pip install pdf2any[ocr-easyocr]
-
-# Usage (auto-detects CUDA)
-pdf2any scan.pdf -t markdown --ocr --ocr-engine easyocr --ocr-lang eng
 ```
 
 ### LLM Vision OCR
@@ -725,7 +711,7 @@ pdf2any scan.pdf -t markdown --ocr-force \
 |------|---------|-------------|
 | `--ocr` | off | Enable OCR (hybrid mode) |
 | `--ocr-force` | off | Force OCR on all pages (implies `--ocr`) |
-| `--ocr-engine` | `auto` | `auto`, `tesseract`, `easyocr`, `llm` |
+| `--ocr-engine` | `auto` | `auto`, `tesseract`, `llm` |
 | `--ocr-provider` | `openai` | LLM provider: `openai`, `anthropic`, `gemini` |
 | `--ocr-model` | per-provider | Model name (e.g. `gpt-4o`, `claude-sonnet-4-20250514`) |
 | `--ocr-lang` | `eng` | Language code (`eng`, `fra`, `deu`, `ind`, `ch_sim`, ...) |
@@ -740,8 +726,8 @@ pdf2any scan.pdf -t markdown --ocr-force \
 | Phase | Features |
 |-------|----------|
 | **v0.1** | markdown, html, prosemirror, json, txt, docx, png/jpg; CLI; IR; tests; packaging; installer scripts |
-| **v0.2** (current) | **OCR (Tesseract + EasyOCR + LLM vision: OpenAI/Anthropic/Gemini)**; hybrid + force modes; custom base URL for OpenAI-compatible endpoints |
-| **v0.3** | Improved table detection; `epub` output format |
+| **v0.2** (current) | **OCR (Tesseract + LLM vision: OpenAI/Anthropic/Gemini)**; hybrid + force modes; custom base URL for OpenAI-compatible endpoints |
+| **v0.3** | Improved table detection; `epub` output format; EasyOCR provider |
 | **v0.4** | `latex` output format; custom AST plugin API |
 | **v0.5** | User-defined renderer plugins; optional server mode |
 
