@@ -116,12 +116,14 @@ pip install pdf2any[ocr-llm]
 # With all OCR engines
 pip install pdf2any[ocr-all]
 
-# With everything
-pip install pdf2any[tables,docx,ocr-all]
+# Everything (tables + docx + all OCR)
+pip install pdf2any[all]
 
 # Development
 pip install pdf2any[dev]
 ```
+
+> **Note:** The standalone binary (Option A/B) already bundles tables, DOCX, Tesseract wrapper, and LLM OCR. EasyOCR is excluded from the binary (adds ~2 GB via PyTorch) — install it separately with `pip install pdf2any[ocr-easyocr]` if needed.
 
 ### Option D: Docker
 
